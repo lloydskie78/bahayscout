@@ -1,0 +1,48 @@
+version: '3.8'
+
+# Development docker-compose with hot reload
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+    restart: unless-stopped
+    networks:
+      - bahayscout-network
+
+  db:
+    image: postgis/postgis:15-3.3
+    environment:
+      - POSTGRES_USER=bahayscout
+      - POSTGRES_PASSWORD=bahayscout_password
+      - POSTGRES_DB=bahayscout
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - bahayscout-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bahayscout"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+
+networks:
+  bahayscout-network:
+    driver: bridge

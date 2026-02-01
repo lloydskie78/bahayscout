@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+    restart: unless-stopped
+    networks:
+      - bahayscout-network
+    # Uncomment if using local database
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
+
+  # Optional: Local PostgreSQL for development/testing
+  # Uncomment the db service and depends_on above if you want to run a local database instead of using Supabase
+  # db:
+  #   image: postgis/postgis:15-3.3
+  #   environment:
+  #     - POSTGRES_USER=bahayscout
+  #     - POSTGRES_PASSWORD=bahayscout_password
+  #     - POSTGRES_DB=bahayscout
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - bahayscout-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U bahayscout"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+volumes:
+  postgres_data:
+
+networks:
+  bahayscout-network:
+    driver: bridge
