@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { createClientSupabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface AuthFormProps {
   mode: 'login' | 'signup'
@@ -31,6 +32,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     try {
       if (mode === 'signup') {
+        // Sign up the user
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email,
           password,
@@ -40,6 +42,8 @@ export function AuthForm({ mode }: AuthFormProps) {
               phone,
               role,
             },
+            // Skip email confirmation for immediate login
+            emailRedirectTo: `${window.location.origin}/api/auth/callback`,
           },
         })
 
@@ -63,7 +67,15 @@ export function AuthForm({ mode }: AuthFormProps) {
             throw new Error(errorData.error || 'Failed to create profile')
           }
 
-          setMessage('Account created! Please check your email to verify your account.')
+          // Check if user is already confirmed (email confirmation disabled in Supabase)
+          // or if session exists (auto-confirm enabled)
+          if (authData.session) {
+            // User is automatically logged in, redirect to dashboard
+            window.location.href = '/dashboard'
+          } else {
+            // Email confirmation is required
+            setMessage('Account created! Please check your email to verify your account, then login.')
+          }
         }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -85,7 +97,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>{mode === 'login' ? 'Login' : 'Sign Up'}</CardTitle>
+        <CardTitle>{mode === 'login' ? 'Welcome Back' : 'Create Account'}</CardTitle>
         <CardDescription>
           {mode === 'login'
             ? 'Enter your credentials to access your account'
@@ -101,6 +113,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 <Input
                   id="displayName"
                   type="text"
+                  placeholder="Juan Dela Cruz"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   required
@@ -111,6 +124,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 <Input
                   id="phone"
                   type="tel"
+                  placeholder="+63 917 123 4567"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                 />
@@ -121,7 +135,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                   id="role"
                   value={role}
                   onChange={(e) => setRole(e.target.value as 'buyer' | 'lister')}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <option value="buyer">Search/Buy Properties</option>
                   <option value="lister">List Properties</option>
@@ -134,6 +148,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             <Input
               id="email"
               type="email"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -144,19 +159,48 @@ export function AuthForm({ mode }: AuthFormProps) {
             <Input
               id="password"
               type="password"
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
             />
+            {mode === 'signup' && (
+              <p className="text-xs text-muted-foreground">Must be at least 6 characters</p>
+            )}
           </div>
-          {error && <div className="text-sm text-destructive">{error}</div>}
-          {message && <div className="text-sm text-green-600">{message}</div>}
+          {error && (
+            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+          {message && (
+            <div className="rounded-md bg-green-50 p-3 text-sm text-green-600">
+              {message}
+            </div>
+          )}
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Loading...' : mode === 'login' ? 'Login' : 'Sign Up'}
+            {loading ? 'Please wait...' : mode === 'login' ? 'Login' : 'Create Account'}
           </Button>
         </form>
       </CardContent>
+      <CardFooter className="flex justify-center border-t pt-6">
+        {mode === 'login' ? (
+          <p className="text-sm text-muted-foreground">
+            Don&apos;t have an account?{' '}
+            <Link href="/signup" className="font-medium text-primary hover:underline">
+              Sign up
+            </Link>
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{' '}
+            <Link href="/login" className="font-medium text-primary hover:underline">
+              Login
+            </Link>
+          </p>
+        )}
+      </CardFooter>
     </Card>
   )
 }

@@ -27,8 +27,8 @@ export default async function AdminReportsPage() {
     .from('reports')
     .select(`
       *,
-      listings!listing_id (title, slug),
-      profiles!reporter_user_id (display_name)
+      listings!reports_listing_id_fkey (title, slug),
+      profiles!reports_reporter_user_id_fkey (display_name)
     `)
     .eq('status', 'open')
     .order('created_at', { ascending: false })

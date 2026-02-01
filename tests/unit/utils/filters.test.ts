@@ -1,4 +1,4 @@
-import { parseFilters, buildFilterQuery } from '@/lib/utils/filters'
+import { parseFilters } from '@/lib/utils/filters'
 
 describe('filter utilities', () => {
   describe('parseFilters', () => {
@@ -27,26 +27,49 @@ describe('filter utilities', () => {
       expect(filters.search).toBeUndefined()
       expect(filters.category).toBeUndefined()
     })
-  })
 
-  describe('buildFilterQuery', () => {
-    it('builds Prisma where clause', () => {
-      const filters = {
-        category: 'rent' as const,
-        propertyType: 'condo' as const,
-        minPrice: 1000000,
-        maxPrice: 5000000,
-        bedrooms: 2,
-      }
+    it('parses location params correctly', () => {
+      const params = new URLSearchParams({
+        region: 'NCR',
+        province: 'Metro Manila',
+        city: 'Makati',
+        barangay: 'Poblacion',
+      })
 
-      const where = buildFilterQuery(filters)
+      const filters = parseFilters(params)
 
-      expect(where.status).toBe('published')
-      expect(where.category).toBe('rent')
-      expect(where.propertyType).toBe('condo')
-      expect(where.pricePhp.gte).toBe(1000000)
-      expect(where.pricePhp.lte).toBe(5000000)
-      expect(where.bedrooms.gte).toBe(2)
+      expect(filters.region).toBe('NCR')
+      expect(filters.province).toBe('Metro Manila')
+      expect(filters.city).toBe('Makati')
+      expect(filters.barangay).toBe('Poblacion')
+    })
+
+    it('parses property type and area filters', () => {
+      const params = new URLSearchParams({
+        propertyType: 'condo',
+        minFloorArea: '50',
+        maxFloorArea: '100',
+        minLotArea: '100',
+        maxLotArea: '500',
+      })
+
+      const filters = parseFilters(params)
+
+      expect(filters.propertyType).toBe('condo')
+      expect(filters.minFloorArea).toBe(50)
+      expect(filters.maxFloorArea).toBe(100)
+      expect(filters.minLotArea).toBe(100)
+      expect(filters.maxLotArea).toBe(500)
+    })
+
+    it('parses boolean filters', () => {
+      const params = new URLSearchParams({
+        petFriendly: 'true',
+      })
+
+      const filters = parseFilters(params)
+
+      expect(filters.petFriendly).toBe(true)
     })
   })
 })
